@@ -2,7 +2,7 @@ import speech_recognition as sr
 from pydub import AudioSegment
 from functions import change_name
 
-# Функция для преобразования в .wav-файл (Google не принимает .mp3)
+# Функция для преобразования в .wav-файл (.mp3 не принимаются)
 def convert_to_wav(input_file, output_file=None):
 
     if output_file == None:
@@ -17,7 +17,7 @@ def convert_to_wav(input_file, output_file=None):
     # Возвращаем имя выходного файла 
     return output_file
 
-# Функция для транскрибирования аудио (средствами Google)
+# Функция для транскрибирования аудио
 def transcript(audio_file,
                verbose = False,
                lang='ru'
