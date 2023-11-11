@@ -3,7 +3,7 @@ import os
 # Добавление префикса и суффикса файлам
 def add_prefix(file_path, 
                prefix="_", 
-               suffix=''
+               suffix='',
                ):
 
     path, filename = os.path.split(file_path)
