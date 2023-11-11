@@ -13,11 +13,11 @@ def change_name(file_path,
     path, filename = os.path.split(file_path)
     name_, extension_ = os.path.splitext(filename)
         
-    # Присваиваем новое имя, если требуется
+    # Вручную присваиваем расширение, если требуется
     if extension != None:
         extension_ = extension
 
-    # Присваиваем новое расширение, если требуется
+    # Вручную присваиваем имя, если требуется
     if name != None:
         name_ = name
 
