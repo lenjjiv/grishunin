@@ -1,17 +1,32 @@
 import os
+import re
 
-# Добавление префикса и суффикса файлам
-def add_prefix(file_path, 
-               prefix="_", 
-               suffix='',
+# Добавление префикса и суффикса к названиям файлов
+def change_name(file_path, 
+                name=None,
+                extension=None,
+                prefix="", 
+                suffix="",
                ):
 
+    # Парсим исходное имя файла
     path, filename = os.path.split(file_path)
-    name, extension = os.path.splitext(filename)
-    new_name = f"{prefix}{name}{extension}{suffix}"
-    new_path = os.path.join(path, new_name).replace("\\", "/")
+    name_, extension_ = os.path.splitext(filename)
+        
+    # Присваиваем новое имя, если требуется
+    if extension != None:
+        extension_ = extension
 
-    return new_path
+    # Присваиваем новое расширение, если требуется
+    if name != None:
+        name_ = name
+
+    # Добавляем префикс и суффикс к имени, если требуется
+    new_name = f"{prefix}{name_}{suffix}{extension_}"
+
+    # Возвращаем новое имя файла
+    return os.path.join(path, new_name).replace("\\", "/")
+
 
 # Обработка всех файлов в папке функцией processing_function
 def process_folder(folder_path, processing_function):
@@ -28,3 +43,19 @@ def process_folder(folder_path, processing_function):
     for file_name in files:
         file_path = os.path.join(folder_path, file_name)
         processing_function(file_path)
+
+
+# Парсинг строки с указанием времени (вида "1h10m1s10ms")
+def parse_time(time_str):
+
+    # Регулярное выражение для парсинга
+    match = re.match(r'(?:(\d+h))?(?:(\d+m(?!s)))?(?:(\d+s))?(?:(\d+ms))?', time_str)
+    
+    # Получение часов, минут, секунд и миллисекунд из результатов поиска
+    hours = int(match.group(1)[:-1]) if match.group(1) else 0
+    minutes = int(match.group(2)[:-1]) if match.group(2) else 0
+    seconds = int(match.group(3)[:-1]) if match.group(3) else 0
+    milliseconds = int(match.group(4)[:-2]) if match.group(4) else 0
+
+    # Возвращаем время в миллисекундах
+    return hours * 60 * 60 * 1000 + minutes * 60 * 1000 + seconds * 1000 + milliseconds
