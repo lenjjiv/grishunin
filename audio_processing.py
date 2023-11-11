@@ -3,16 +3,19 @@ from pydub import AudioSegment
 from functions import change_name
 
 # Функция для преобразования в .wav-файл (.mp3 не принимаются)
-def convert_to_wav(input_file, output_file=None):
+def convert_audio(input_file, 
+                  output_file=None, 
+                  format='wav'
+                  ):
 
     if output_file == None:
-        output_file = change_name(input_file, extension=".wav")
+        output_file = change_name(input_file, extension=f".{format}")
 
     # Загрузка аудиофайла
     audio = AudioSegment.from_file(input_file)
 
     # Сохранение в формате WAV
-    audio.export(output_file, format="wav")
+    audio.export(output_file, format=format)
 
     # Возвращаем имя выходного файла 
     return output_file
