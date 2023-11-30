@@ -1,8 +1,7 @@
-from pedalboard import Compressor, Gain, HighpassFilter, Pedalboard
+from pedalboard import Gain, HighpassFilter, Pedalboard
 from pedalboard.io import AudioFile
 from functions import *
-from pydub import AudioSegment, effects  
-from audio_processing import audio_normalize
+from pydub import AudioSegment
 
 def process_audio(input_file, 
                  output_file = None, 
