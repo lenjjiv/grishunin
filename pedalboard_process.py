@@ -32,7 +32,7 @@ def process_audio(input_file,
     # Открываем аудиофайл для чтения:
     with AudioFile(input_file) as f:
 
-      # Если не указано иное, файл сохраняем с префиксом _ (для различения)
+      # Если не указано иное, файл сохраняем с суффиксом в имени (для различения)
       if output_file == None:
         output_file = change_name(input_file, suffix='_processed')
 
