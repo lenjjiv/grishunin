@@ -1,6 +1,7 @@
 import speech_recognition as sr
-from pydub import AudioSegment
+from pydub import AudioSegment, effects
 from functions import change_name
+import os
 
 # Функция для преобразования в .wav-файл (.mp3 не принимаются)
 def convert_audio(input_file, 
