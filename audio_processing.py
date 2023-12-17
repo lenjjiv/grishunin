@@ -6,6 +6,7 @@ from torchaudio import functional as F
 from pydub import AudioSegment
 from functions import parse_time, change_name
 
+
 def load_audio(input_file):
     """
     Импортирует аудиофайл с помощью torchaudio. Возвращает массив numpy.
@@ -24,6 +25,7 @@ def load_audio(input_file):
     except Exception as e:
         print(f"Ошибка при загрузке аудиофайла: {e}")
         return None, None
+
 
 def calculate_rms_dB(audio_np):
     """
@@ -155,6 +157,7 @@ def reduce_noise(waveform, sample_rate: int, y_noise: str = None,
         
 
     return reduced_noise, sample_rate
+
 
 def save_audio_to_file(audio_np, sample_rate: int, output_file: str):
     """

@@ -96,4 +96,3 @@ def pedalboard_processing(input_file: str,
                 
                 # Записываем вывод в output_file:
                 o.write(effected)
-

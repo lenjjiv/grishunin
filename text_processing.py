@@ -33,6 +33,7 @@ def import_pdf_text(file_path, start_page=None, end_page=None):
         print(f"Произошла ошибка при извлечении текста из PDF: {e}")
         return None
 
+
 def clean_text(text, mode='normal', preserve_symbols=None, remove_symbols=None, remove_caps=False):
     """Очищает текст от лишних символов
 
@@ -63,7 +64,6 @@ def clean_text(text, mode='normal', preserve_symbols=None, remove_symbols=None, 
         text = re.sub(r'\s+', ' ', text)        # Заменяем последовательности пробелов на один
         text = re.sub(r'\.{3,}', '.', text)     # Заменяем три и более точки на одну
         text = re.sub(r'[^ «»;:—!.,()\-А-Яа-яЁёA-Za-z0-9]', '', text)  # Удаляем все символы, кроме букв, цифр и пробелов
-
 
     elif mode == 'aggressive':
                     
@@ -108,6 +108,7 @@ def clean_text(text, mode='normal', preserve_symbols=None, remove_symbols=None, 
 
     return text
 
+
 def remove_links(text):
     """
     Удаляет ссылки из текста.
@@ -136,6 +137,7 @@ def remove_links(text):
 
     return cleaned_text
 
+
 def import_text(file_path, encoding='utf-8'):
     """
     Импортирует текст из файла.
@@ -152,6 +154,7 @@ def import_text(file_path, encoding='utf-8'):
         imported_text = file.read()
 
     return imported_text
+
 
 def export_text(file_path, text, encoding='utf-8'):
     """
