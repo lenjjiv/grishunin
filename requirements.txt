@@ -1,3 +1,0 @@
-pedalboard==0.8.5
-pydub==0.25.1
-SpeechRecognition==3.10.0

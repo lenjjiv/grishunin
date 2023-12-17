@@ -1,0 +1,9 @@
+{
+    "files.exclude": {
+        "ignore": true,
+        ".vscode": true,
+        "__pycache__": true,
+        "LICENSE": true,
+        ".gitignore": true
+    }
+}

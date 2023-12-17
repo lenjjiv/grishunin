@@ -1,24 +1,37 @@
 import os
 import re
 
-# Добавление префикса и суффикса к названиям файлов
-def change_name(file_path, 
-                name=None,
-                extension=None,
-                prefix="", 
+def change_name(file_path: str,
+                name: str = None,
+                extension: str = None,
+                prefix="",
                 suffix="",
                ):
+    """
+    Изменяет имя файла, добавляя префикс и/или суффикс к его названию.\n
+    Может изменять расширение файла и его имя.
 
+    Аргументы:
+    file_path (str): Путь к файлу, чье имя нужно изменить.
+    name (str, optional): Новое имя файла. Если указано, заменяет текущее имя.
+    extension (str, optional): Новое расширение файла. Если указано, заменяет текущее расширение.
+    prefix (str, optional): Префикс, который добавляется к имени файла перед его текущим названием.
+    suffix (str, optional): Суффикс, который добавляется к имени файла после его текущего названия.
+
+    Возвращает:
+    str: Новый путь с измененным именем файла.
+    """
+    
     # Парсим исходное имя файла
     path, filename = os.path.split(file_path)
     name_, extension_ = os.path.splitext(filename)
         
     # Вручную присваиваем расширение, если требуется
-    if extension != None:
+    if extension is not None:
         extension_ = extension
 
     # Вручную присваиваем имя, если требуется
-    if name != None:
+    if name is not None:
         name_ = name
 
     # Добавляем префикс и суффикс к имени, если требуется
@@ -28,9 +41,17 @@ def change_name(file_path,
     return os.path.join(path, new_name).replace("\\", "/")
 
 
-# Обработка всех файлов в папке функцией processing_function
 def process_folder(folder_path, processing_function):
+    """
+    Обрабатывает все файлы в указанной папке с помощью заданной функции.
 
+    Аргументы:
+    folder_path (str): Путь к папке, содержащей файлы для обработки.
+    processing_function (callable): Функция для обработки каждого файла. Должна принимать один аргумент - путь к файлу.
+
+    Возвращает:
+    None
+    """
     # Проверяем, существует ли указанная папка
     if not os.path.exists(folder_path):
         print(f"Папка {folder_path} не существует.")
@@ -45,9 +66,16 @@ def process_folder(folder_path, processing_function):
         processing_function(file_path)
 
 
-# Парсинг строки с указанием времени (вида "1h10m1s10ms")
 def parse_time(time_str):
+    """
+    Парсит строку длительности в формате "1h10m1s10ms" и возвращает общее время в миллисекундах.
 
+    Аргументы:
+    time_str (str): Строка с указанием времени в формате "1h10m1s10ms".
+
+    Возвращает:
+    int: Общее время в миллисекундах, полученное из указанной строки времени.
+    """
     # Регулярное выражение для парсинга
     match = re.match(r'(?:(\d+h))?(?:(\d+m(?!s)))?(?:(\d+s))?(?:(\d+ms))?', time_str)
     
