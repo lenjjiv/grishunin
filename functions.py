@@ -41,13 +41,14 @@ def change_name(file_path: str,
     return os.path.join(path, new_name).replace("\\", "/")
 
 
-def process_folder(folder_path, processing_function):
+def process_folder(folder_path, processing_function, kwargs):
     """
     Обрабатывает все файлы в указанной папке с помощью заданной функции.
 
     Аргументы:
     folder_path (str): Путь к папке, содержащей файлы для обработки.
     processing_function (callable): Функция для обработки каждого файла. Должна принимать один аргумент - путь к файлу.
+    kwargs (dict): Словарь с аргументами для передачи их в processing_function.
 
     Возвращает:
     None
@@ -60,10 +61,10 @@ def process_folder(folder_path, processing_function):
     # Получаем список файлов в указанной папке
     files = [file for file in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, file))]
 
-    # Применяем функцию к каждому файлу
+    # Применяем функцию к каждому файлу с передачей аргументов из словаря kwargs
     for file_name in files:
         file_path = os.path.join(folder_path, file_name)
-        processing_function(file_path)
+        processing_function(file_path, **kwargs)
 
 
 def parse_time(time_str):
