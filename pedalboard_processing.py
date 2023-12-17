@@ -4,15 +4,15 @@ from pedalboard.io import AudioFile
 from functions import change_name
 import numpy as np
 
-def process_audio(input_file: str, 
-                 output_file: str = None, 
-                 chunk_s: float = 1.,
-                 target_dB: float = None,
-                 gain_db: float = None,
-                 limiter_threshold_db: float = None,
-                 filter_hipass_hz: float = None,
-                 filter_lowpass_hz: float = None,
-                 ):
+def pedalboard_processing(input_file: str, 
+                          output_file: str = None, 
+                          chunk_s: float = 1.,
+                          target_dB: float = None,
+                          gain_db: float = None,
+                          limiter_threshold_db: float = None,
+                          filter_hipass_hz: float = None,
+                          filter_lowpass_hz: float = None,
+                          ):
     """
         Обрабатывает аудиофайл цепочкой эффектов.
 

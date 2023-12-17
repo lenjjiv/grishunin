@@ -3,6 +3,8 @@ import torchaudio
 import numpy as np
 import noisereduce as nr
 from torchaudio import functional as F
+from pydub import AudioSegment
+from functions import parse_time, change_name
 
 def load_audio(input_file):
     """
@@ -212,3 +214,49 @@ def denoise_audio(audio_path: str, output_path: str,
     # Сохранение обработанного аудиофайла
     save_audio_to_file(audio_denoised, sample_rate, output_path)
 
+
+# Функция для обрезки аудио по заданному времени
+def make_sample(audio_file, 
+                start="0m0s", 
+                end="1m0s",
+                format="mp3",
+                verbose=False
+                ):
+    """
+    Обрезает аудиофайл по заданным временным точкам и сохраняет отрезок в новый файл.
+
+    Args:
+    - audio_file (строка): Путь к исходному аудиофайлу.
+    - start (строка): Начальное время для обрезки аудио. Например, "0m30s" обозначает 30 секунд.
+    - end (строка): Конечное время для обрезки аудио. Например, "1m0s" обозначает 1 минуту.        
+    - format (строка): Формат для сохранения результата. Поддерживаемые форматы — "mp3", "wav".            
+    - verbose (булево): Если True, выводит информацию о сохранении отрезка в файл.
+
+    Examples:
+    >>> make_sample("input_audio.mp3", start="0m30s", end="1m10s", format="wav", verbose=True)
+    # Отрезок сохранится в файл input_audio_0m30s_1m10s.wav
+    
+    >>> make_sample("music.wav", end="2m0s")
+    # Создастся файл "music_0m0s_2m0s.mp3" с началом аудио с 0 секунд и концом на 2 минуты.
+
+    Returns:
+        None
+
+    """
+
+    # Приводим время к миллисекундам
+    start_ms = parse_time(start)
+    end_ms = parse_time(end)
+
+    # Загрузка аудиофайла
+    audio = AudioSegment.from_file(audio_file)
+
+    # Вырезаем отрезок из аудио
+    audio_segment = audio[start_ms:end_ms]
+
+    # Сохранение результата (по умолчанию format="mp3")
+    output_file_name = change_name(audio_file, suffix=f'_{start}_{end}')
+    audio_segment.export(output_file_name, format=format)
+    
+    if verbose: # Выводим сообщение, если запрошен verbose
+        print(f"Отрезок сохранен в файл: {output_file_name}")
