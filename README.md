@@ -11,6 +11,10 @@ Toolkit делится на 4 части:
 * text_processing
 * openai-whisper
 
+Подробная информация о функциях — в их документации (на русском языке).
+
+Примеры использования функций находятся в Jupyter-блокнотах `cookbook_*.ipynb`.
+
 ### audio_processing
 
 * `load_audio`, `save_audio_to_file` — импорт и экспорт аудио из файла
