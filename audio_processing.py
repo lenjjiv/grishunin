@@ -123,8 +123,7 @@ def highpass_filter(audio_np, sample_rate: int, cutoff_freq=350.):
     return audio_np_filtered, sample_rate
 
 
-def reduce_noise(waveform, sample_rate: int, y_noise: str = None,
-                 prop_decrease=0.75, stationary=True, n_jobs=-1, device='cpu'):
+def reduce_noise(waveform, sample_rate: int, prop_decrease=0.75, stationary=True, n_jobs=-1, device='cpu'):
     """
     Уменьшает шум в аудиосигнале.
 
@@ -141,19 +140,18 @@ def reduce_noise(waveform, sample_rate: int, y_noise: str = None,
         numpy.ndarray, int: Возвращает уменьшенный шум в аудиосигнале и частоту дискретизации.
     """
     # Денойзинг с образцом шума
-    if y_noise:
-        reduced_noise = nr.reduce_noise(y=waveform, sr=sample_rate,
-                                        y_noise=y_noise, 
-                                        stationary=stationary, 
-                                        prop_decrease=prop_decrease, 
-                                        device=device,
-                                        n_jobs=n_jobs)
+    # Работает не корректно
+    # if y_noise:
+        # reduced_noise = nr.reduce_noise(y=waveform, sr=sample_rate,
+        #                                 y_noise=y_noise, 
+        #                                 stationary=stationary, 
+        #                                 prop_decrease=prop_decrease, 
+        #                                 device=device,
+        #                                 n_jobs=n_jobs)
         
     # Денойзинг без образца   
-    else:
-        reduced_noise = nr.reduce_noise(y=waveform, stationary=stationary, sr=sample_rate,
-                                        prop_decrease=prop_decrease, device=device,
-                                        n_jobs=n_jobs)
+    reduced_noise = nr.reduce_noise(y=waveform, stationary=stationary, sr=sample_rate,
+                                    prop_decrease=prop_decrease, device=device, n_jobs=n_jobs)
         
 
     return reduced_noise, sample_rate
