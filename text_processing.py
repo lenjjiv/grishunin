@@ -156,7 +156,7 @@ def import_text(file_path, encoding='utf-8'):
     return imported_text
 
 
-def export_text(file_path, text, encoding='utf-8'):
+def export_text(text, file_path, encoding='utf-8'):
     """
     Экспортирует текст в файл с заданной кодировкой.
 
