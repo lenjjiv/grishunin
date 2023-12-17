@@ -41,13 +41,34 @@ def change_name(file_path: str,
     return os.path.join(path, new_name).replace("\\", "/")
 
 
-def process_folder(folder_path, processing_function, kwargs):
+def change_folder_name(file_path, new_folder):
     """
-    Обрабатывает все файлы в указанной папке с помощью заданной функции.
+    Изменяет путь к файлу, переместив его в новую папку.
+
+    Аргументы:
+    file_path (str): Путь к файлу.
+    new_folder (str): Новый путь к папке.
+
+    Возвращает:
+    str: Путь к файлу в новой папке.
+    """
+    # Получаем имя файла из исходного пути
+    file_name = os.path.basename(file_path)
+
+    # Объединяем новый путь к папке и имя файла
+    new_file_path = os.path.join(new_folder, file_name)
+
+    return new_file_path
+
+
+def process_folder(folder_path, processing_function, output_folder = None, kwargs = {}):
+    """
+    Обрабатывает все файлы в указанной папке с помощью переданной функции.
 
     Аргументы:
     folder_path (str): Путь к папке, содержащей файлы для обработки.
     processing_function (callable): Функция для обработки каждого файла. Должна принимать один аргумент - путь к файлу.
+    output_folder (str): Папка для сохранения результатов. Имя output_file передаётся в исполняющую функцию, если она не принимает такой аргумент, вылетит ошибка.
     kwargs (dict): Словарь с аргументами для передачи их в processing_function.
 
     Возвращает:
@@ -57,14 +78,28 @@ def process_folder(folder_path, processing_function, kwargs):
     if not os.path.exists(folder_path):
         print(f"Папка {folder_path} не существует.")
         return
+    
+    # Создаём папку output_path, если такая не существует
+    if output_folder != None:
+        if not os.path.exists(output_folder):
+            os.makedirs(output_folder)
 
     # Получаем список файлов в указанной папке
     files = [file for file in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, file))]
 
     # Применяем функцию к каждому файлу с передачей аргументов из словаря kwargs
     for file_name in files:
+        
+        # Берём файл из папки
         file_path = os.path.join(folder_path, file_name)
-        processing_function(file_path, **kwargs)
+        
+        # Меняем output_path, если указана output_folder
+        if output_folder != None:
+            output_file = change_folder_name(file_path, output_folder)
+            processing_function(file_path, output_file = output_file, **kwargs)
+        
+        else: # В противном случае, просто выполняем функцию, которую указали
+            processing_function(file_path, output_file = None, **kwargs)
 
 
 def parse_time(time_str):

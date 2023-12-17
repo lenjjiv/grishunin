@@ -218,6 +218,7 @@ def denoise_audio(audio_path: str, output_path: str,
 
 # Функция для обрезки аудио по заданному времени
 def make_sample(audio_file, 
+                output_file = None,
                 start="0m0s", 
                 end="1m0s",
                 format="mp3",
@@ -255,26 +256,31 @@ def make_sample(audio_file,
     # Вырезаем отрезок из аудио
     audio_segment = audio[start_ms:end_ms]
 
-    # Сохранение результата (по умолчанию format="mp3")
-    output_file_name = change_name(audio_file, suffix=f'_{start}_{end}')
-    audio_segment.export(output_file_name, format=format)
+    # Если имя выходного файла не указано, добавляем суффикс к названию исходного
+    if output_file == None:
+        output_file = change_name(audio_file, suffix=f'_{start}_{end}')
+    
+    # Сохранение результата (по умолчанию format="mp3")   
+    audio_segment.export(output_file, format=format)
     
     if verbose: # Выводим сообщение, если запрошен verbose
-        print(f"Отрезок сохранен в файл: {output_file_name}")
+        print(f"Отрезок сохранен в файл: {output_file}")
         
         
-def process_audio(file_path: str, 
-                  hipass_cutoff: float = None, 
+def process_audio(input_file: str, 
+                  output_file: str = None, 
+                  highpass_cutoff: float = None, 
                   target_db: float = None, 
-                  prop_decrease: float = 0.5, 
+                  prop_decrease: float = None, 
                   stationary: bool = True,
-                  denoising_args: dict = None):
+                  denoising_args: dict = {}):
     """
     Обрабатывает аудиофайл (импорт -> нормализация -> фильтр нижних частот -> денойзинг -> экспорт).
 
     Аргументы:
-    file_path (str): Путь к аудиофайлу.
-    hipass_cutoff (int): Частота среза для hi-pass фильтра (фильтра нижних частот).
+    input_file (str): Путь к аудиофайлу.
+    output_file (str): Путь к выходному файлу (опционально).
+    highpass_cutoff (int): Частота среза для hi-pass фильтра (фильтра нижних частот).
     target_db (int): Целевой уровень громкости для нормализации.
     prop_decrease (float): Коэффициент подавления шума (proportion decrease). Значение 0 отключает денойзинг. Не рекомендуется ставить 1, т.к. в этом случае очень вероятно появление артефактов.
     stationary (bool): Флаг для использования стационарного денойзинга. Стационарный режим более стабилен (т.к. вычитается один и тот же спектр шума из всей длительности аудио).
@@ -282,20 +288,25 @@ def process_audio(file_path: str,
     Возвращает:
     None
     """
+    
+    # Создаём уникальное имя файла, если не было передано конкретное
+    if output_file == None:
+        output_file = change_name(input_file, suffix='_processed')
+        
     # Импортируем аудио-файл
-    sound, sample_rate = load_audio(file_path)
+    sound, sample_rate = load_audio(input_file)
 
     # Нормализация
     if target_db is not None:
         sound, sample_rate = normalize_audio(sound, sample_rate, target_dB=target_db)
 
     # Фильтр нижних частот (High-pass)
-    if hipass_cutoff is not None:
-        sound, sample_rate = highpass_filter(sound, sample_rate, cutoff_freq=hipass_cutoff)
+    if highpass_cutoff is not None:
+        sound, sample_rate = highpass_filter(sound, sample_rate, cutoff_freq=highpass_cutoff)
 
     # Денойзинг
     if prop_decrease is not None and prop_decrease != 0:
         sound, sample_rate = reduce_noise(sound, sample_rate, prop_decrease=prop_decrease, stationary=stationary, **denoising_args)
 
     # Сохранение результатов в файл
-    save_audio_to_file(sound, sample_rate, change_name(file_path, suffix='_denoised'))
+    save_audio_to_file(sound, sample_rate, output_file)

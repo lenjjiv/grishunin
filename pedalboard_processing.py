@@ -7,11 +7,11 @@ import numpy as np
 def pedalboard_processing(input_file: str, 
                           output_file: str = None, 
                           chunk_s: float = 1.,
-                          target_dB: float = None,
+                          target_db: float = None,
                           gain_db: float = None,
                           limiter_threshold_db: float = None,
-                          filter_hipass_hz: float = None,
-                          filter_lowpass_hz: float = None,
+                          highpass_cutoff: float = None,
+                          lowpass_cutoff: float = None,
                           ):
     """
         Обрабатывает аудиофайл цепочкой эффектов.
@@ -23,8 +23,8 @@ def pedalboard_processing(input_file: str,
         - target_dB (float, опционально): Целевой уровень громкости в децибелах (dB) для нормализации.
         - gain_db (float, опционально): Усиление громкости в децибелах (dB).
         - limiter_threshold_db (float, опционально): Порог в децибелах (dB) для лимитера (ограничивает предельную громкость пиков).
-        - filter_hipass_hz (float, опционально): Частота среза низких частот.
-        - filter_lowpass_hz (float, опционально): Частота среза высоких частот.
+        - highpass_cutoff (float, опционально): Частота среза низких частот.
+        - lowpass_cutoff (float, опционально): Частота среза высоких частот.
 
         Возвращает:
         - None: Функция сохранит результат в файл output_file. 
@@ -37,19 +37,19 @@ def pedalboard_processing(input_file: str,
         effects = []
 
         # Обрезка нижних частот (и оставление верхних ~ HighPass) 
-        if filter_hipass_hz:
+        if highpass_cutoff:
             effects.append(
-                HighpassFilter(cutoff_frequency_hz = filter_hipass_hz)
+                HighpassFilter(cutoff_frequency_hz = highpass_cutoff)
             )
             
         # Обрезка верхних частот (и оставление нижних ~ LowPass) 
-        if filter_lowpass_hz:
+        if lowpass_cutoff:
             effects.append(
-                LowpassFilter(cutoff_frequency_hz = filter_lowpass_hz)
+                LowpassFilter(cutoff_frequency_hz = lowpass_cutoff)
             )
         
         # Усиление громкости (нормализация аудио)
-        if target_dB and not gain_db:
+        if target_db and not gain_db:
             
             # Оцениваем громкость по первым 10 секундам
             audio_data = audio.read(audio.samplerate * 10) 
@@ -62,7 +62,7 @@ def pedalboard_processing(input_file: str,
             
             # Добавляем в цепочку эффектов усиление громкости
             effects.append(
-                Gain(gain_db = target_dB - volume_dB)
+                Gain(gain_db = target_db - volume_dB)
             )
             
         if gain_db:
