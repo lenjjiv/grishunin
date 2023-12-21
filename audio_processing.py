@@ -1,10 +1,16 @@
-import torch
-import torchaudio
 import numpy as np
-import noisereduce as nr
-from torchaudio import functional as F
-from pydub import AudioSegment
 from functions import parse_time, change_name
+import os
+
+import noisereduce as nr
+import soundfile as sf
+import torchaudio
+from pydub import AudioSegment
+import ffmpeg
+
+from pedalboard import Gain, Pedalboard, Limiter
+from pedalboard import HighpassFilter, LowpassFilter
+from pedalboard.io import AudioFile
 
 
 def load_audio(input_file):
@@ -49,171 +55,6 @@ def calculate_rms_dB(audio_np):
     except Exception as e:
         print(f"Ошибка при расчете уровня громкости: {e}")
         return None
-    
-    
-def increase_volume(audio_np, db_increase):
-    """
-    Увеличивает громкость аудио на заданное количество децибел.
-
-    Args:
-        audio_np (np.ndarray): Массив NumPy, представляющий аудио.
-        db_increase (float): Количество децибел для увеличения громкости.
-
-    Returns:
-        np.ndarray: Массив NumPy с увеличенной громкостью аудио.
-    """
-
-    # Преобразование децибел в коэффициент амплитуды
-    amplitude_ratio = 10 ** (db_increase / 20)
-
-    # Увеличение громкости аудио на указанное количество децибел
-    amplified_audio_np = audio_np * amplitude_ratio
-
-    return amplified_audio_np
-
-
-def normalize_audio(audio_np, sample_rate, target_dB=-9.):
-    """
-    Приводит громкость аудио к заданному уровню децибел (нормализация).\n
-    Внимание! Возможен клиппинг (обрезка слишком громких пиков)!\n
-    По возможности стоит обратиться к продвинутым методам, например, pedalboard.
-
-    Args:
-        audio_np (np.ndarray): Массив NumPy, представляющий аудио.
-        target_dB (float, optional): Желаемый уровень громкости в децибеллах. По умолчанию -9 dB.
-
-    Returns:
-        np.ndarray: Массив NumPy с нормализованной громкостью аудио.
-    """
-
-    # Рассчитываем текущую громкость аудиосигнала
-    current_dB = calculate_rms_dB(audio_np)
-
-    # Вычисляем разницу между текущей и желаемой громкостью
-    dB_difference = target_dB - current_dB
-
-    # Прибавляем нужное количество децибел к аудио
-    amplified_audio_np = increase_volume(audio_np, dB_difference)
-
-    return amplified_audio_np, sample_rate
-
-
-def highpass_filter(audio_np, sample_rate: int, cutoff_freq=350.):
-    """
-    Применяет фильтр нижних частот (hi-pass filter) к аудио.
-
-    Args:
-        audio_np (np.ndarray): Аудио в формате массива numpy.
-        sample_rate (int): Частота дискретизации сигнала (Гц).
-        cutoff_freq (float, optional): Частота среза фильтра в герцах. По умолчанию 350 Гц
-
-    Returns:
-        np.ndarray, int: Возвращает отфильтрованное аудио и его частоту дискретизации (в Гц).
-    """
-
-    # Преобразование массива NumPy в тензор PyTorch
-    waveform = torch.from_numpy(audio_np)
-
-    # Применение фильтра нижних частот
-    waveform = F.highpass_biquad(waveform, sample_rate, cutoff_freq)
-
-    # Преобразование обратно в массив NumPy
-    audio_np_filtered = waveform.numpy()
-
-    return audio_np_filtered, sample_rate
-
-
-def reduce_noise(waveform, sample_rate: int, prop_decrease=0.75, stationary=True, n_jobs=-1, device='cpu'):
-    """
-    Уменьшает шум в аудиосигнале.
-
-    Args:
-        waveform (numpy.ndarray): Аудиосигнал в формате numpy.
-        sample_rate (int): Частота дискретизации.
-        waveform_noise (str, optional): Путь к образцу шума (опционально). Используется для получения спектра шума. 
-        prop_decrease (float, optional): Пропорция уменьшения шума. По умолчанию 0.75.
-        stationary (bool, optional): Если True, предполагается, что шум стационарный.
-        n_jobs (int, optional): Количество потоков для обработки. -1 для максимального числа доступных потоков.
-        device (str, optional): Устройство для вычислений. По умолчанию 'cpu'.
-
-    Returns:
-        numpy.ndarray, int: Возвращает уменьшенный шум в аудиосигнале и частоту дискретизации.
-    """
-    # Денойзинг с образцом шума
-    # Работает не корректно
-    # if y_noise:
-        # reduced_noise = nr.reduce_noise(y=waveform, sr=sample_rate,
-        #                                 y_noise=y_noise, 
-        #                                 stationary=stationary, 
-        #                                 prop_decrease=prop_decrease, 
-        #                                 device=device,
-        #                                 n_jobs=n_jobs)
-        
-    # Денойзинг без образца   
-    reduced_noise = nr.reduce_noise(y=waveform, stationary=stationary, sr=sample_rate,
-                                    prop_decrease=prop_decrease, device=device, n_jobs=n_jobs)
-        
-
-    return reduced_noise, sample_rate
-
-
-def save_audio_to_file(audio_np, sample_rate: int, output_file: str):
-    """
-    Сохраняет аудио в файл с использованием torchaudio.save().
-
-    Args:
-        audio_np (numpy.ndarray): Аудиосигнал в формате numpy.
-        sample_rate (int): Частота дискретизации аудиосигнала.
-        output_file (str): Путь к файлу для сохранения аудиосигнала.
-
-    Returns:
-        None
-    """
-    torchaudio.save(output_file, torch.from_numpy(audio_np), sample_rate)
-    
-    
-def denoise_audio(audio_path: str, output_path: str, 
-                  y_noise: str = None,
-                  device: str = 'cpu', 
-                  prop_decrease: float = 0.5, 
-                  apply_filter: bool = False,
-                  highpass_cutoff: float = 350., 
-                  stationary: bool =True, 
-                  n_jobs: int =-1
-                  ):
-    """
-    Применяет фильтр и денойзинг к аудиосигналу и сохраняет результат.
-
-    Args:
-        audio_path (str): Путь к исходному аудиофайлу.
-        output_path (str): Путь для сохранения обработанного аудиофайла.
-        y_noise (str): Путь к образцу шума из аудио (для извлечения его спектра).
-        device (str, optional): Устройство для вычислений. По умолчанию 'cuda'.
-        prop_decrease (float, optional): Пропорция уменьшения шума. По умолчанию 0.5.
-        apply_filter (bool, optional): Флаг применения фильтра. По умолчанию False.
-        highpass_cutoff (int, optional): Частота среза для фильтра нижних частот. По умолчанию 350.
-        waveform_noise (numpy.ndarray, optional): Образец шума. По умолчанию None.
-        sample_rate_noise (int, optional): Частота дискретизации образца шума. По умолчанию None.
-        stationary (bool, optional): Если True, предполагается, что шум стационарный. По умолчанию True.
-        n_jobs (int, optional): Количество потоков для обработки. По умолчанию -1.
-
-    Returns:
-        None
-    """
-    # Загрузка аудиофайла
-    audio_np, sample_rate = load_audio(audio_path)
-    
-    # Применение high-pass фильтра для обрезки гула
-    if apply_filter:
-        audio_np, sample_rate = highpass_filter(audio_np, sample_rate, cutoff_freq=highpass_cutoff)
-        
-    # Денойзинг аудиозаписи
-    audio_denoised, sample_rate = reduce_noise(audio_np, sample_rate, y_noise=y_noise, 
-                                               device=device, prop_decrease=prop_decrease, 
-                                               stationary=stationary, n_jobs=n_jobs)
-    
-    # Сохранение обработанного аудиофайла
-    save_audio_to_file(audio_denoised, sample_rate, output_path)
 
 
 # Функция для обрезки аудио по заданному времени
@@ -245,7 +86,6 @@ def make_sample(audio_file,
         None
 
     """
-
     # Приводим время к миллисекундам
     start_ms = parse_time(start)
     end_ms = parse_time(end)
@@ -265,48 +105,174 @@ def make_sample(audio_file,
     
     if verbose: # Выводим сообщение, если запрошен verbose
         print(f"Отрезок сохранен в файл: {output_file}")
-        
-        
-def process_audio(input_file: str, 
-                  output_file: str = None, 
-                  highpass_cutoff: float = None, 
-                  target_db: float = None, 
-                  prop_decrease: float = None, 
-                  stationary: bool = True,
-                  denoising_args: dict = {}):
+
+
+def denoise_audio(input_file, 
+                output_file, 
+                device="cuda",
+                prop_decrease=0.5,
+                ):
     """
-    Обрабатывает аудиофайл (импорт -> нормализация -> фильтр нижних частот -> денойзинг -> экспорт).
+    Денойзинг аудиофайла MP3.
 
     Аргументы:
-    input_file (str): Путь к аудиофайлу.
-    output_file (str): Путь к выходному файлу (опционально).
-    highpass_cutoff (int): Частота среза для hi-pass фильтра (фильтра нижних частот).
-    target_db (int): Целевой уровень громкости для нормализации.
-    prop_decrease (float): Коэффициент подавления шума (proportion decrease). Значение 0 отключает денойзинг. Не рекомендуется ставить 1, т.к. в этом случае очень вероятно появление артефактов.
-    stationary (bool): Флаг для использования стационарного денойзинга. Стационарный режим более стабилен (т.к. вычитается один и тот же спектр шума из всей длительности аудио).
+    input_file (str): Путь к входному аудиофайлу MP3.
+    output_file (str): Путь для сохранения улучшенного аудиофайла.
+    device (str): Устройство для обработки (по умолчанию "cuda").
+    prop_decrease (float): Пропорция уменьшения шума. Разумны значения от 0 до 1. В случае 1 очень вероятны артефакты денойзинга, рекомендуются значения до 0.8.
 
     Возвращает:
     None
     """
+    # Проверка на наличие строки "cuda"
+    if device == "cuda" and "cuda" not in device.lower():
+        print("CUDA не обнаружен. Используется CPU.")
     
-    # Создаём уникальное имя файла, если не было передано конкретное
-    if output_file == None:
-        output_file = change_name(input_file, suffix='_processed')
+    try: # Пробуем загрузить аудио с torchaudio (удобно дружелюбностью к разным форматам)
+        sound, sample_rate = torchaudio.load(input_file, normalize=False)
+    except Exception as e:
+        print(f"Произошла ошибка при загрузке файла: {e}")
+        return
+    
+    # Преобразование аудио в numpy array (требует денойзер)
+    sound_np = sound.squeeze().numpy()
+
+    # Проведение денойзинга
+    reduced_noise = nr.reduce_noise(y=sound_np, sr=sample_rate, prop_decrease=prop_decrease, use_torch=True, device=device)
+    
+    # Сохранение очищенного аудиофайла
+    sf.write(output_file, reduced_noise, sample_rate)
+    
+    
+def convert_m4a_to_mp3(input_file, output_file):
+    """
+    Конвертирует файл формата M4A в файл формата MP3.
+
+    Аргументы:
+    input_file (str): Путь к исходному файлу M4A.
+    output_file (str): Путь для сохранения конвертированного файла MP3.
+
+    Возвращает:
+    None
+    """
+    try:
+        output_file = os.path.splitext(output_file)[0] + '.mp3'
+        ffmpeg.input(input_file).output(output_file).run()
+        print(f"Файл {input_file} успешно сконвертирован в {output_file}")
+    except ffmpeg.Error as e:
+        print(f"Произошла ошибка при конвертации: {e.stderr}")
+        raise e
+    
+    
+def pedalboard_processing(input_file: str, 
+                          output_file: str = None, 
+                          chunk_s: float = 1.,
+                          target_db: float = None,
+                          gain_db: float = None,
+                          limiter_threshold_db: float = None,
+                          highpass_cutoff: float = None,
+                          lowpass_cutoff: float = None,
+                          ):
+    """
+        Обрабатывает аудиофайл цепочкой эффектов.
+
+        Аргументы:
+        - input_file (str): Путь к входному аудио.
+        - output_file (str, опционально): Путь для сохранения результата. Если None, обработанное аудио сохранится с добавлением суффикса к имени входного файла.
+        - chunk_s (float, опционально): Продолжительность обрабатываемых фрагментов в секундах. По умолчанию 1 секунда.
+        - target_dB (float, опционально): Целевой уровень громкости в децибелах (dB) для нормализации.
+        - gain_db (float, опционально): Усиление громкости в децибелах (dB).
+        - limiter_threshold_db (float, опционально): Порог в децибелах (dB) для лимитера (ограничивает предельную громкость пиков).
+        - highpass_cutoff (float, опционально): Частота среза низких частот.
+        - lowpass_cutoff (float, опционально): Частота среза высоких частот.
+
+        Возвращает:
+        - None: Функция сохранит результат в файл output_file. 
+
+    """
+    
+    with AudioFile(input_file) as audio:
+
+        # Создаём цепочку эффектов
+        effects = []
+
+        # Обрезка нижних частот (и оставление верхних ~ HighPass) 
+        if highpass_cutoff:
+            effects.append(
+                HighpassFilter(cutoff_frequency_hz = highpass_cutoff)
+            )
+            
+        # Обрезка верхних частот (и оставление нижних ~ LowPass) 
+        if lowpass_cutoff:
+            effects.append(
+                LowpassFilter(cutoff_frequency_hz = lowpass_cutoff)
+            )
         
-    # Импортируем аудио-файл
-    sound, sample_rate = load_audio(input_file)
+        # Усиление громкости (нормализация аудио)
+        if target_db and not gain_db:
+            
+            # Оцениваем громкость по первым 10 секундам
+            audio_data = audio.read(audio.samplerate * 10) 
+        
+            # Посчитаем амплитуду аудиосигнала
+            amplitude = np.sqrt(np.mean(audio_data**2))
+            
+            # Оценка громкости в дБ
+            volume_dB = 20 * np.log10(amplitude)
+            
+            # Добавляем в цепочку эффектов усиление громкости
+            effects.append(
+                Gain(gain_db = target_db - volume_dB)
+            )
+            
+        if gain_db:
+            # Добавляем в цепочку эффектов усиление громкости
+            effects.append(
+                Gain(gain_db = gain_db)
+            )
+        
+        if limiter_threshold_db:
+            # Добавляем лимитер, чтобы запретить сигналу превышать порог громкости
+            effects.append(
+                Limiter(threshold_db=limiter_threshold_db)
+            )
+        
+        # Создаём цепочку обработки звука:
+        board = Pedalboard(effects)
 
-    # Нормализация
-    if target_db is not None:
-        sound, sample_rate = normalize_audio(sound, sample_rate, target_dB=target_db)
+        # Если не указано иное, файл сохраняем результат с добавлением суффикса к имени
+        if output_file == None:
+            output_file = change_name(input_file, suffix='_processed')
 
-    # Фильтр нижних частот (High-pass)
-    if highpass_cutoff is not None:
-        sound, sample_rate = highpass_filter(sound, sample_rate, cutoff_freq=highpass_cutoff)
+        # Открываем аудиофайл для записи
+        with AudioFile(output_file, 'w', audio.samplerate, audio.num_channels) as o:
 
-    # Денойзинг
-    if prop_decrease is not None and prop_decrease != 0:
-        sound, sample_rate = reduce_noise(sound, sample_rate, prop_decrease=prop_decrease, stationary=stationary, **denoising_args)
+            # Читаем по chunk_s секунд за раз
+            while audio.tell() < audio.frames:
+                chunk = audio.read(chunk_s * audio.samplerate)
+                
+                # Пропускаем звук через цепочку обработки:
+                effected = board(chunk, audio.samplerate, reset=False)
+                
+                # Записываем вывод в output_file:
+                o.write(effected)
+           
+                
+def extract_left_channel(input_file, output_file):
+    """
+    Извлекает левый аудиоканал из файла и сохраняет его в формате MP3.
 
-    # Сохранение результатов в файл
-    save_audio_to_file(sound, sample_rate, output_file)
+    Аргументы:
+    input_file (str): Путь к исходному аудиофайлу.
+    output_file (str): Путь для сохранения левого аудиоканала в формате MP3.
+
+    Возвращает:
+    None
+    """
+    audio = AudioSegment.from_file(input_file)
+    
+    # Извлечение левого канала
+    left_channel = audio.split_to_mono()[0]
+    
+    # Сохранение левого канала в файл
+    left_channel.export(output_file, format="mp3")

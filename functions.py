@@ -1,5 +1,7 @@
 import os
 import re
+import shutil
+import inspect
 
 def change_name(file_path: str,
                 name: str = None,
@@ -61,22 +63,22 @@ def change_folder_name(file_path, new_folder):
     return new_file_path
 
 
-def process_folder(folder_path, processing_function, output_folder = None, kwargs = {}):
+def process_folder(input_folder, processing_function, output_folder = None, kwargs = {}, verbose = True):
     """
     Обрабатывает все файлы в указанной папке с помощью переданной функции.
 
     Аргументы:
     folder_path (str): Путь к папке, содержащей файлы для обработки.
     processing_function (callable): Функция для обработки каждого файла. Должна принимать один аргумент - путь к файлу.
-    output_folder (str): Папка для сохранения результатов. Имя output_file передаётся в исполняющую функцию, если она не принимает такой аргумент, вылетит ошибка.
+    output_folder (str): Папка для сохранения результатов. Имя output_file передаётся в исполняющую функцию, (если функция не принимает такой аргумент, вылетит ошибка).
     kwargs (dict): Словарь с аргументами для передачи их в processing_function.
 
     Возвращает:
     None
     """
     # Проверяем, существует ли указанная папка
-    if not os.path.exists(folder_path):
-        print(f"Папка {folder_path} не существует.")
+    if not os.path.exists(input_folder):
+        print(f"Папка {input_folder} не существует.")
         return
     
     # Создаём папку output_path, если такая не существует
@@ -85,13 +87,19 @@ def process_folder(folder_path, processing_function, output_folder = None, kwarg
             os.makedirs(output_folder)
 
     # Получаем список файлов в указанной папке
-    files = [file for file in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, file))]
+    files = [file for file in os.listdir(input_folder) if os.path.isfile(os.path.join(input_folder, file))]
+    
+    # Проверяем, что функция принимает аргумент "output_file", если указана output_folder
+    if output_folder is not None:
+        signature = inspect.signature(processing_function)
+        if 'output_file' not in signature.parameters:
+            raise TypeError(f"Функция {processing_function.__name__} не принимает аргумент output_file!")
 
     # Применяем функцию к каждому файлу с передачей аргументов из словаря kwargs
     for file_name in files:
         
         # Берём файл из папки
-        file_path = os.path.join(folder_path, file_name)
+        file_path = os.path.join(input_folder, file_name)
         
         # Меняем output_path, если указана output_folder
         if output_folder != None:
@@ -100,6 +108,9 @@ def process_folder(folder_path, processing_function, output_folder = None, kwarg
         
         else: # В противном случае, просто выполняем функцию, которую указали
             processing_function(file_path, output_file = None, **kwargs)
+            
+        if verbose:
+            print(f'Файл {file_name} успешно обработан!')
 
 
 def parse_time(time_str):
@@ -123,3 +134,49 @@ def parse_time(time_str):
 
     # Возвращаем время в миллисекундах
     return hours * 60 * 60 * 1000 + minutes * 60 * 1000 + seconds * 1000 + milliseconds
+
+
+def move_files(from_folder, to_folder, verbose=0):
+    """
+    Перемещает все файлы и папки из указанной папки 'from_folder' в указанную папку 'to_folder'.
+
+    Аргументы:
+    - from_folder: строка, имя папки, откуда происходит перемещение файлов и папок.
+    - to_folder: строка, имя папки, куда перемещаются файлы и папки.
+    - verbose: int (по умолчанию 0), уровень подробности сообщений.
+               0: отсутствие сообщений
+               1: только уведомление об окончании процедуры
+               2: уведомление о каждом перемещении файла или папки
+    """
+    # Формируем полные пути к папкам
+    source_path = os.path.abspath(from_folder)
+    destination_path = os.path.abspath(to_folder)
+
+    # Проверяем существование источника
+    if not os.path.exists(source_path):
+        print(f"Ошибка: Папка '{from_folder}' не существует.")
+        return
+
+    # Создаем папку назначения, если ее нет
+    if not os.path.exists(destination_path):
+        os.makedirs(destination_path)
+        if verbose == 2:
+            print(f"Папка '{to_folder}' успешно создана.")
+
+    # Получаем список файлов и папок в папке источнике
+    files = os.listdir(source_path)
+
+    # Перемещаем каждый файл или папку из папки источника в папку назначения
+    for file_name in files:
+        file_path = os.path.join(source_path, file_name)
+        if os.path.isfile(file_path):
+            shutil.move(file_path, destination_path)
+            if verbose == 2:
+                print(f"Файл '{file_name}' перемещен в '{to_folder}'.")
+        elif os.path.isdir(file_path):
+            shutil.move(file_path, destination_path)
+            if verbose == 2:
+                print(f"Папка '{file_name}' перемещена в '{to_folder}'.")
+
+    if verbose >= 1:
+        print(f"Все файлы из '{from_folder}' успешно перемещены в '{to_folder}'.")
