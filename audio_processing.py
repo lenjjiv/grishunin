@@ -13,50 +13,6 @@ from pedalboard import HighpassFilter, LowpassFilter
 from pedalboard.io import AudioFile
 
 
-def load_audio(input_file):
-    """
-    Импортирует аудиофайл с помощью torchaudio. Возвращает массив numpy.
-
-    Args:
-        input_file (str): Путь к аудиофайлу.
-
-    Returns:
-        np.ndarray, int: Возвращает waveform (массив numpy) и sample_rate (частота дискретизации (Гц)).
-    """
-
-    try:
-        waveform, sample_rate = torchaudio.load(input_file)
-        waveform_np = waveform.numpy()  # Преобразование в массив NumPy
-        return waveform_np, sample_rate
-    except Exception as e:
-        print(f"Ошибка при загрузке аудиофайла: {e}")
-        return None, None
-
-
-def calculate_rms_dB(audio_np):
-    """
-    Вычисляет уровень громкости звука в децибелах (dB) для аудиосигнала.
-
-    Args:
-        audio_np (numpy.ndarray): Аудиосигнал в формате NumPy.
-
-    Returns:
-        float: Уровень громкости в децибелах.
-    """
-
-    if audio_np is None or len(audio_np) == 0:
-        print("Пустой аудиосигнал. Невозможно рассчитать уровень громкости.")
-        return None
-
-    try:
-        rms = np.sqrt(np.mean(audio_np ** 2))
-        rms_dB = 20 * np.log10(rms)
-        return rms_dB
-    except Exception as e:
-        print(f"Ошибка при расчете уровня громкости: {e}")
-        return None
-
-
 # Функция для обрезки аудио по заданному времени
 def make_sample(audio_file, 
                 output_file = None,
@@ -148,11 +104,11 @@ def convert_m4a_to_mp3(input_file, output_file):
     """
     Конвертирует файл формата M4A в файл формата MP3.
 
-    Аргументы:
+    Args:
     input_file (str): Путь к исходному файлу M4A.
     output_file (str): Путь для сохранения конвертированного файла MP3.
 
-    Возвращает:
+    Return:
     None
     """
     try:
@@ -176,7 +132,7 @@ def pedalboard_processing(input_file: str,
     """
         Обрабатывает аудиофайл цепочкой эффектов.
 
-        Аргументы:
+        Args:
         - input_file (str): Путь к входному аудио.
         - output_file (str, опционально): Путь для сохранения результата. Если None, обработанное аудио сохранится с добавлением суффикса к имени входного файла.
         - chunk_s (float, опционально): Продолжительность обрабатываемых фрагментов в секундах. По умолчанию 1 секунда.
@@ -186,7 +142,7 @@ def pedalboard_processing(input_file: str,
         - highpass_cutoff (float, опционально): Частота среза низких частот.
         - lowpass_cutoff (float, опционально): Частота среза высоких частот.
 
-        Возвращает:
+        Return:
         - None: Функция сохранит результат в файл output_file. 
 
     """
@@ -256,23 +212,28 @@ def pedalboard_processing(input_file: str,
                 
                 # Записываем вывод в output_file:
                 o.write(effected)
-           
-                
-def extract_left_channel(input_file, output_file):
+
+
+def extract_channel(input_file, output_file, channel = 0):
     """
-    Извлекает левый аудиоканал из файла и сохраняет его в формате MP3.
+    Извлекает аудиоканал из файла и сохраняет аудио в том же формате.
 
-    Аргументы:
+    Args:
     input_file (str): Путь к исходному аудиофайлу.
-    output_file (str): Путь для сохранения левого аудиоканала в формате MP3.
+    output_file (str): Путь для сохранения аудиоканала.
+    channel (int): Канал, который требуется извлечь (обычно 0 или 1 (стерео), при этом 0 — соответствует L-каналу)
 
-    Возвращает:
+    Return:
     None
     """
     audio = AudioSegment.from_file(input_file)
     
     # Извлечение левого канала
-    left_channel = audio.split_to_mono()[0]
+    left_channel = audio.split_to_mono()[channel]
     
-    # Сохранение левого канала в файл
-    left_channel.export(output_file, format="mp3")
+    # Получение формата исходного файла
+    _, file_extension = os.path.splitext(input_file)
+    output_format = file_extension[1:]  # Избавляемся от точки в расширении
+    
+    # Сохранение левого канала в файл в том же формате
+    left_channel.export(output_file, format=output_format)
